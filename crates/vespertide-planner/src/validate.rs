@@ -640,6 +640,95 @@ pub fn find_missing_enum_fill_with(
     missing
 }
 
+/// Information about an `AddConstraint::Unique` action that is data-dependent unsafe
+/// (it can fail at apply time if existing rows contain duplicate values).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AddedUniqueConstraint {
+    pub action_index: usize,
+    pub table: String,
+    pub columns: Vec<String>,
+    pub constraint_name: Option<String>,
+}
+
+/// Find all `AddConstraint` actions that add a UNIQUE constraint to an existing table.
+/// Newly created tables (via `CreateTable`) are ignored because they are empty at apply time.
+pub fn detect_added_unique(plan: &MigrationPlan) -> Vec<AddedUniqueConstraint> {
+    let mut findings = Vec::new();
+    for (idx, action) in plan.actions.iter().enumerate() {
+        if let MigrationAction::AddConstraint {
+            table,
+            constraint: TableConstraint::Unique { name, columns },
+        } = action
+        {
+            findings.push(AddedUniqueConstraint {
+                action_index: idx,
+                table: table.clone(),
+                columns: columns.clone(),
+                constraint_name: name.clone(),
+            });
+        }
+    }
+    findings
+}
+
+/// Information about a `ModifyColumnType` action that performs a timezone-affecting
+/// conversion (TIMESTAMP <-> TIMESTAMPTZ). These can silently reinterpret existing
+/// values without an explicit timezone normalization.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RiskyTypeChange {
+    pub action_index: usize,
+    pub table: String,
+    pub column: String,
+    pub from_type: String,
+    pub to_type: String,
+}
+
+/// Find `ModifyColumnType` actions that switch between TIMESTAMP and TIMESTAMPTZ.
+/// Requires `current_schema` (baseline) to look up the previous column type.
+pub fn detect_risky_type_change(
+    plan: &MigrationPlan,
+    current_schema: &[TableDef],
+) -> Vec<RiskyTypeChange> {
+    let mut findings = Vec::new();
+    for (idx, action) in plan.actions.iter().enumerate() {
+        if let MigrationAction::ModifyColumnType {
+            table,
+            column,
+            new_type,
+            ..
+        } = action
+        {
+            let old_type = current_schema
+                .iter()
+                .find(|t| t.name == *table)
+                .and_then(|t| t.columns.iter().find(|c| c.name == *column))
+                .map(|c| &c.r#type);
+
+            if let Some(old) = old_type
+                && is_timezone_recasting(old, new_type)
+            {
+                findings.push(RiskyTypeChange {
+                    action_index: idx,
+                    table: table.clone(),
+                    column: column.clone(),
+                    from_type: old.to_display_string(),
+                    to_type: new_type.to_display_string(),
+                });
+            }
+        }
+    }
+    findings
+}
+
+fn is_timezone_recasting(from: &ColumnType, to: &ColumnType) -> bool {
+    use vespertide_core::SimpleColumnType::{Timestamp, Timestamptz};
+    matches!(
+        (from, to),
+        (ColumnType::Simple(Timestamp), ColumnType::Simple(Timestamptz))
+            | (ColumnType::Simple(Timestamptz), ColumnType::Simple(Timestamp))
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

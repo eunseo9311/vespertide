@@ -1,0 +1,10 @@
+Found 2 change(s) to apply:
+
+1. Modify column nullability: users.email -> NOT NULL
+2. Add constraint: uq_users__email UNIQUE (email) on users
+
+⚠  Detected 2 potentially unsafe action(s):
+   [F1] users.email: NOT NULL on column without backfill strategy
+   [F2] users.(email): UNIQUE constraint may fail if duplicate values exist
+
+   Run `vespertide revision -m "..."` to specify safety strategies.

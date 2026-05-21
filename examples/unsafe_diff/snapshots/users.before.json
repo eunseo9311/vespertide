@@ -1,0 +1,16 @@
+{
+  "name": "users",
+  "columns": [
+    {
+      "name": "id",
+      "type": "big_int",
+      "nullable": false,
+      "primary_key": { "auto_increment": true }
+    },
+    {
+      "name": "email",
+      "type": "text",
+      "nullable": true
+    }
+  ]
+}

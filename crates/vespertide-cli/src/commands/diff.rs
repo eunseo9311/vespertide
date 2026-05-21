@@ -1,6 +1,9 @@
 use anyhow::Result;
 use colored::Colorize;
-use vespertide_planner::plan_next_migration;
+use vespertide_planner::{
+    detect_added_unique, detect_risky_type_change, find_missing_enum_fill_with,
+    find_missing_fill_with, plan_next_migration_with_baseline, schema_from_plans,
+};
 
 use crate::utils::{load_config, load_migrations, load_models};
 use vespertide_core::MigrationAction;
@@ -10,8 +13,12 @@ pub async fn cmd_diff() -> Result<()> {
     let current_models = load_models(&config)?;
     let applied_plans = load_migrations(&config)?;
 
-    let plan = plan_next_migration(&current_models, &applied_plans)
-        .map_err(|e| anyhow::anyhow!("planning error: {}", e))?;
+    let baseline_schema = schema_from_plans(&applied_plans)
+        .map_err(|e| anyhow::anyhow!("failed to reconstruct schema: {}", e))?;
+
+    let plan =
+        plan_next_migration_with_baseline(&current_models, &applied_plans, &baseline_schema)
+            .map_err(|e| anyhow::anyhow!("planning error: {}", e))?;
 
     if plan.actions.is_empty() {
         println!(
@@ -35,8 +42,72 @@ pub async fn cmd_diff() -> Result<()> {
                 format_action(action)
             );
         }
+
+        emit_safety_warnings(&plan, &baseline_schema);
     }
     Ok(())
+}
+
+fn emit_safety_warnings(plan: &vespertide_core::MigrationPlan, baseline: &[vespertide_core::TableDef]) {
+    let f1 = find_missing_fill_with(plan, baseline);
+    let f2 = detect_added_unique(plan);
+    let f20 = detect_risky_type_change(plan, baseline);
+    let enum_findings = find_missing_enum_fill_with(plan, baseline);
+
+    let total = f1.len() + f2.len() + f20.len() + enum_findings.len();
+    if total == 0 {
+        return;
+    }
+
+    println!();
+    println!(
+        "{}",
+        format!("⚠  Detected {} potentially unsafe action(s):", total).yellow()
+    );
+
+    for f in &f1 {
+        println!(
+            "   {} {}.{}: NOT NULL on column without backfill strategy",
+            "[F1]".yellow().bold(),
+            f.table,
+            f.column
+        );
+    }
+    for f in &f2 {
+        let cols = f.columns.join(", ");
+        println!(
+            "   {} {}.({}): UNIQUE constraint may fail if duplicate values exist",
+            "[F2]".yellow().bold(),
+            f.table,
+            cols
+        );
+    }
+    for f in &f20 {
+        println!(
+            "   {} {}.{}: {}\u{2192}{} may silently reinterpret timezone",
+            "[F20]".yellow().bold(),
+            f.table,
+            f.column,
+            f.from_type,
+            f.to_type
+        );
+    }
+    for f in &enum_findings {
+        let removed = f.removed_values.join(", ");
+        println!(
+            "   {}  {}.{}: enum value removal requires replacement mapping ({})",
+            "[ENUM]".yellow().bold(),
+            f.table,
+            f.column,
+            removed
+        );
+    }
+
+    println!();
+    println!(
+        "   Run {} to specify safety strategies.",
+        "`vespertide revision -m \"...\"`".bright_white()
+    );
 }
 
 fn format_action(action: &MigrationAction) -> String {

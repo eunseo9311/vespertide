@@ -1,0 +1,4 @@
+Created migration: migrations/0002_require_email.vespertide.json
+  Version: 2
+  Actions: 2
+  Comment: require email
