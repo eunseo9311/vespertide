@@ -6,3 +6,7 @@ lcov.info
 .sisyphus
 .omc
 node_modules
+
+# Private paper drafts (do not publish)
+apps/vscode/.vscode/vespertide_models_td.*
+apps/vscode/.vscode/missfont.log
