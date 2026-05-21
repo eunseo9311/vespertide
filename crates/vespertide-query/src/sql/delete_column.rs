@@ -459,10 +459,10 @@ mod tests {
         assert_eq!(result.len(), 2);
 
         let drop_index_sql = result[0].build(DatabaseBackend::Sqlite);
-        // Named constraint: uq_gift__gift_code (name is "gift_code")
+        // The user-provided constraint name is used verbatim.
         assert!(
-            drop_index_sql.contains("uq_gift__gift_code"),
-            "Expected uq_gift__gift_code, got: {}",
+            drop_index_sql.contains("gift_code"),
+            "Expected user-supplied constraint name gift_code, got: {}",
             drop_index_sql
         );
     }

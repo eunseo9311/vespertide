@@ -810,7 +810,7 @@ mod tests {
         #[case] index_name: &str,
         #[case] columns: Vec<&str>,
     ) {
-        // Test that custom index names follow ix_table__name pattern
+        // When the caller supplies an index name, it is used verbatim.
         let action = MigrationAction::AddConstraint {
             table: "user".into(),
             constraint: TableConstraint::Index {
@@ -821,12 +821,10 @@ mod tests {
         let result = build_action_queries(&backend, &action, &[]).unwrap();
         let sql = result[0].build(backend);
 
-        // Should use ix_table__name pattern
-        let expected_name = format!("ix_user__{}", index_name);
         assert!(
-            sql.contains(&expected_name),
+            sql.contains(index_name),
             "Expected index name '{}' in SQL: {}",
-            expected_name,
+            index_name,
             sql
         );
 
@@ -907,7 +905,7 @@ mod tests {
         #[case] index_name: &str,
         #[case] columns: Vec<&str>,
     ) {
-        // Test that removing custom index uses ix_table__name pattern
+        // When the caller supplies an index name, it is used verbatim.
         let action = MigrationAction::RemoveConstraint {
             table: "user".into(),
             constraint: TableConstraint::Index {
@@ -918,12 +916,10 @@ mod tests {
         let result = build_action_queries(&backend, &action, &[]).unwrap();
         let sql = result[0].build(backend);
 
-        // Should use ix_table__name pattern
-        let expected_name = format!("ix_user__{}", index_name);
         assert!(
-            sql.contains(&expected_name),
+            sql.contains(index_name),
             "Expected index name '{}' in SQL: {}",
-            expected_name,
+            index_name,
             sql
         );
 
@@ -1038,12 +1034,11 @@ mod tests {
             .collect::<Vec<String>>()
             .join("\n");
 
-        // Should use uq_table__name pattern
-        let expected_name = format!("uq_user__{}", constraint_name);
+        // Provided constraint name is used verbatim.
         assert!(
-            sql.contains(&expected_name),
+            sql.contains(constraint_name),
             "Expected unique constraint name '{}' in SQL: {}",
-            expected_name,
+            constraint_name,
             sql
         );
 
@@ -1186,13 +1181,13 @@ mod tests {
             .collect::<Vec<String>>()
             .join("\n");
 
-        // Should use uq_table__name pattern (for Postgres/MySQL, not SQLite which rebuilds table)
+        // Provided name is used verbatim (for Postgres/MySQL; SQLite rebuilds the table
+        // so the literal name does not appear in the emitted DDL).
         if backend != DatabaseBackend::Sqlite {
-            let expected_name = format!("uq_user__{}", constraint_name);
             assert!(
-                sql.contains(&expected_name),
+                sql.contains(constraint_name),
                 "Expected unique constraint name '{}' in SQL: {}",
-                expected_name,
+                constraint_name,
                 sql
             );
         }

@@ -87,8 +87,8 @@ fn test_composite_unique_constraint_generates_single_index() {
         "Should create unique index"
     );
     assert!(
-        create_unique_sql.contains("\"uq_user__route_provider_id\""),
-        "Should use the named constraint. Got: {}",
+        create_unique_sql.contains("\"route_provider_id\""),
+        "Should use the named constraint verbatim. Got: {}",
         create_unique_sql
     );
     assert!(

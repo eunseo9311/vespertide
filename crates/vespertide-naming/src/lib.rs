@@ -201,34 +201,34 @@ pub fn pluralize(name: &str) -> String {
 // ============================================================================
 
 /// Generate index name from table name, columns, and optional user-provided key.
-/// Always includes table name to avoid conflicts across tables.
-/// Uses double underscore to separate table name from the rest.
-/// Format: ix_{table}__{key} or ix_{table}__{col1}_{col2}...
+/// When `key` is provided, it is used verbatim as the constraint name — the caller
+/// owns the full name and is responsible for table-scoping. When `key` is `None`,
+/// the canonical `ix_{table}__{col1}_{col2}...` form is generated.
 pub fn build_index_name(table: &str, columns: &[String], key: Option<&str>) -> String {
     match key {
-        Some(k) => format!("ix_{}__{}", table, k),
+        Some(k) => k.to_string(),
         None => format!("ix_{}__{}", table, columns.join("_")),
     }
 }
 
 /// Generate unique constraint name from table name, columns, and optional user-provided key.
-/// Always includes table name to avoid conflicts across tables.
-/// Uses double underscore to separate table name from the rest.
-/// Format: uq_{table}__{key} or uq_{table}__{col1}_{col2}...
+/// When `key` is provided, it is used verbatim as the constraint name — the caller
+/// owns the full name and is responsible for table-scoping. When `key` is `None`,
+/// the canonical `uq_{table}__{col1}_{col2}...` form is generated.
 pub fn build_unique_constraint_name(table: &str, columns: &[String], key: Option<&str>) -> String {
     match key {
-        Some(k) => format!("uq_{}__{}", table, k),
+        Some(k) => k.to_string(),
         None => format!("uq_{}__{}", table, columns.join("_")),
     }
 }
 
 /// Generate foreign key constraint name from table name, columns, and optional user-provided key.
-/// Always includes table name to avoid conflicts across tables.
-/// Uses double underscore to separate table name from the rest.
-/// Format: fk_{table}__{key} or fk_{table}__{col1}_{col2}...
+/// When `key` is provided, it is used verbatim as the constraint name — the caller
+/// owns the full name and is responsible for table-scoping. When `key` is `None`,
+/// the canonical `fk_{table}__{col1}_{col2}...` form is generated.
 pub fn build_foreign_key_name(table: &str, columns: &[String], key: Option<&str>) -> String {
     match key {
-        Some(k) => format!("fk_{}__{}", table, k),
+        Some(k) => k.to_string(),
         None => format!("fk_{}__{}", table, columns.join("_")),
     }
 }
@@ -445,10 +445,15 @@ mod tests {
     // ========================================================================
 
     #[test]
-    fn test_build_index_name_with_key() {
+    fn test_build_index_name_with_key_uses_key_verbatim() {
+        // When the caller supplies a name, it is used as-is — no auto prefixing.
         assert_eq!(
-            build_index_name("users", &["email".into()], Some("email_idx")),
-            "ix_users__email_idx"
+            build_index_name("users", &["email".into()], Some("ix_users__email")),
+            "ix_users__email"
+        );
+        assert_eq!(
+            build_index_name("users", &["email".into()], Some("custom_name")),
+            "custom_name"
         );
     }
 
@@ -469,10 +474,14 @@ mod tests {
     }
 
     #[test]
-    fn test_build_unique_constraint_name_with_key() {
+    fn test_build_unique_constraint_name_with_key_uses_key_verbatim() {
         assert_eq!(
-            build_unique_constraint_name("users", &["email".into()], Some("email_unique")),
-            "uq_users__email_unique"
+            build_unique_constraint_name("users", &["email".into()], Some("uq_users__email")),
+            "uq_users__email"
+        );
+        assert_eq!(
+            build_unique_constraint_name("users", &["email".into()], Some("custom_name")),
+            "custom_name"
         );
     }
 
@@ -485,10 +494,14 @@ mod tests {
     }
 
     #[test]
-    fn test_build_foreign_key_name_with_key() {
+    fn test_build_foreign_key_name_with_key_uses_key_verbatim() {
         assert_eq!(
-            build_foreign_key_name("posts", &["user_id".into()], Some("fk_user")),
-            "fk_posts__fk_user"
+            build_foreign_key_name("posts", &["user_id".into()], Some("fk_posts__user_id")),
+            "fk_posts__user_id"
+        );
+        assert_eq!(
+            build_foreign_key_name("posts", &["user_id".into()], Some("custom_fk")),
+            "custom_fk"
         );
     }
 

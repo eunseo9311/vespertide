@@ -380,17 +380,17 @@ mod tests {
     #[case::add_constraint_unique_named_postgres(
         "add_constraint_unique_named_postgres",
         DatabaseBackend::Postgres,
-        &["CREATE UNIQUE INDEX \"uq_users__uq_email\" ON \"users\" (\"email\")"]
+        &["CREATE UNIQUE INDEX \"uq_email\" ON \"users\" (\"email\")"]
     )]
     #[case::add_constraint_unique_named_mysql(
         "add_constraint_unique_named_mysql",
         DatabaseBackend::MySql,
-        &["CREATE UNIQUE INDEX `uq_users__uq_email` ON `users` (`email`)"]
+        &["CREATE UNIQUE INDEX `uq_email` ON `users` (`email`)"]
     )]
     #[case::add_constraint_unique_named_sqlite(
         "add_constraint_unique_named_sqlite",
         DatabaseBackend::Sqlite,
-        &["CREATE UNIQUE INDEX \"uq_users__uq_email\" ON \"users\" (\"email\")"]
+        &["CREATE UNIQUE INDEX \"uq_email\" ON \"users\" (\"email\")"]
     )]
     #[case::add_constraint_foreign_key_postgres(
         "add_constraint_foreign_key_postgres",

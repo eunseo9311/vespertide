@@ -1,19 +1,19 @@
 Migrations (oldest -> newest): 2
 
 Version: 1
-  Created at: 2026-05-21T13:34:36Z
+  Created at: 2026-05-21T13:53:14Z
   Comment: init users
   Actions: 1
     1. CreateTable: users
        CREATE TABLE "users" ( "id" bigserial NOT NULL, "email" text, PRIMARY KEY ("id") )
 
 Version: 2
-  Created at: 2026-05-21T13:34:36Z
+  Created at: 2026-05-21T13:53:14Z
   Comment: require email
   Actions: 2
     1. ModifyColumnNullable: users.email -> NOT NULL
     1-1. UPDATE "users" SET "email" = 'anonymous@example.com' WHERE "email" IS NULL
     1-2. ALTER TABLE "users" ALTER COLUMN "email" SET NOT NULL
     2. AddConstraint: users.uq_users__email (UNIQUE)
-       CREATE UNIQUE INDEX "uq_users__uq_users__email" ON "users" ("email")
+       CREATE UNIQUE INDEX "uq_users__email" ON "users" ("email")
 

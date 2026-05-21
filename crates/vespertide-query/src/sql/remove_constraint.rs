@@ -392,12 +392,12 @@ mod tests {
     #[case::remove_constraint_unique_named_postgres(
         "remove_constraint_unique_named_postgres",
         DatabaseBackend::Postgres,
-        &["DROP INDEX \"uq_users__uq_email\""]
+        &["DROP INDEX \"uq_email\""]
     )]
     #[case::remove_constraint_unique_named_mysql(
         "remove_constraint_unique_named_mysql",
         DatabaseBackend::MySql,
-        &["DROP INDEX `uq_users__uq_email`"]
+        &["DROP INDEX `uq_email`"]
     )]
     #[case::remove_constraint_unique_named_sqlite(
         "remove_constraint_unique_named_sqlite",
@@ -407,12 +407,12 @@ mod tests {
     #[case::remove_constraint_foreign_key_named_postgres(
         "remove_constraint_foreign_key_named_postgres",
         DatabaseBackend::Postgres,
-        &["DROP CONSTRAINT \"fk_users__fk_user\""]
+        &["DROP CONSTRAINT \"fk_user\""]
     )]
     #[case::remove_constraint_foreign_key_named_mysql(
         "remove_constraint_foreign_key_named_mysql",
         DatabaseBackend::MySql,
-        &["DROP FOREIGN KEY `fk_users__fk_user`"]
+        &["DROP FOREIGN KEY `fk_user`"]
     )]
     #[case::remove_constraint_foreign_key_named_sqlite(
         "remove_constraint_foreign_key_named_sqlite",
@@ -615,7 +615,7 @@ mod tests {
 
         if matches!(backend, DatabaseBackend::Sqlite) {
             assert!(sql.contains("CREATE INDEX"));
-            assert!(sql.contains("ix_users__idx_id"));
+            assert!(sql.contains("idx_id"));
         }
 
         with_settings!({ snapshot_suffix => format!("remove_primary_key_with_index_{:?}", backend) }, {
@@ -807,7 +807,7 @@ mod tests {
 
         if matches!(backend, DatabaseBackend::Sqlite) {
             assert!(sql.contains("CREATE INDEX"));
-            assert!(sql.contains("ix_users__idx_id"));
+            assert!(sql.contains("idx_id"));
         }
 
         with_settings!({ snapshot_suffix => format!("remove_unique_with_index_{:?}", backend) }, {

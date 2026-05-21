@@ -2,5 +2,5 @@
 source: crates/vespertide-query/src/sql/replace_constraint.rs
 description: replace unique constraint for MySql
 ---
-ALTER TABLE `users` DROP INDEX `uq_users__uq_email`;
-CREATE UNIQUE INDEX `uq_users__uq_email_new` ON `users` (`email`)
+ALTER TABLE `users` DROP INDEX `uq_email`;
+CREATE UNIQUE INDEX `uq_email_new` ON `users` (`email`)
